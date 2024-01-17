@@ -1,0 +1,3 @@
+[submodule "src/csrc/kernel/xformers"]
+	path = src/csrc/kernel/xformers
+	url = https://github.com/facebookresearch/xformers.git
