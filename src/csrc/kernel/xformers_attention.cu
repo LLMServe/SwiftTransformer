@@ -345,19 +345,19 @@ void xformersContextStageAttention(
 		at::Tensor q_tensor = getTensor(
 			const_cast<T*>(qkvs),
 			{ 1, num_tokens, num_heads, head_dim },
-			{ 1, 1, 3, 1 },
+			{ 1, 3, 1, 1 },
 			torch::kHalf
 		);
 		at::Tensor k_tensor = getTensor(
 			const_cast<T*>(qkvs) + num_heads * head_dim,
 			{ 1, num_tokens, num_heads, head_dim },
-			{ 1, 1, 3, 1 },
+			{ 1, 3, 1, 1 },
 			torch::kHalf
 		);
 		at::Tensor v_tensor = getTensor(
 			const_cast<T*>(qkvs) + 2 * num_heads * head_dim,
 			{ 1, num_tokens, num_heads, head_dim },
-			{ 1, 1, 3, 1 },
+			{ 1, 3, 1, 1 },
 			torch::kHalf
 		);
 		at::Tensor seqstart = getTensor(
