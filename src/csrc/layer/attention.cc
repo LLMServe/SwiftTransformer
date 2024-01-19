@@ -176,40 +176,45 @@ void attention(
 		);
 		sync_check_cuda_error();
 
-		// kernel::fusedContextStageAttention<T>(
-		// 	attn_out_buf,
+		if (local_q_head_num == local_kv_head_num) {
+			// Use xformers' attention kernel when GQA (group query attention) is disabled
+			kernel::xformersContextStageAttention<T>(
+				attn_out_buf,
+				qkv_buf,
+				qk_scale,
+				input_len,
+				num_context_reqs,
+				ith_context_req_req_index,
+				ith_context_req_token_index,
+				local_q_head_num,
+				local_kv_head_num,
+				head_dim,
+				num_tokens,
+				max_context_req_len
+			);
+			sync_check_cuda_error();
+		} else {
+			// If GQA is enabled we use our own context stage attention kernel
+			kernel::fusedContextStageAttention<T>(
+				attn_out_buf,
 
-		// 	qkv_buf,
-		// 	qk_scale,
+				qkv_buf,
+				qk_scale,
 
-		// 	input_len,
-		// 	num_context_reqs,
-		// 	ith_context_req_req_index,
-		// 	ith_context_req_token_index,
+				input_len,
+				num_context_reqs,
+				ith_context_req_req_index,
+				ith_context_req_token_index,
 
-		// 	local_q_head_num,
-		// 	local_kv_head_num,
-		// 	head_dim,
-		// 	num_tokens,
-		// 	context_stage_kernel_m_buf,
-		// 	context_stage_kernel_l_buf
-		// );
-		// sync_check_cuda_error();
-		kernel::xformersContextStageAttention<T>(
-			attn_out_buf,
-			qkv_buf,
-			qk_scale,
-			input_len,
-			num_context_reqs,
-			ith_context_req_req_index,
-			ith_context_req_token_index,
-			local_q_head_num,
-			local_kv_head_num,
-			head_dim,
-			num_tokens,
-			max_context_req_len
-		);
-		sync_check_cuda_error();
+				local_q_head_num,
+				local_kv_head_num,
+				head_dim,
+				num_tokens,
+				context_stage_kernel_m_buf,
+				context_stage_kernel_l_buf
+			);
+			sync_check_cuda_error();
+		}
 	}
 
 
