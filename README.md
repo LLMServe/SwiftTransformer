@@ -1,25 +1,32 @@
 # SwiftTransformer
 
-SwiftTransformer is a tiny yet powerful and flexible implementation of the transformer neural network. It aims at providing a framework for researchers to try on their novel ideas.
+SwiftTransformer is a tiny yet powerful implementation of the inference infrastructure for transformer model families. It aims at providing an easy-to-use framework for researchers to try on their ideas and iterate quickly. Yet it also supports popular features like model/pipeline parallelism, FlashAttention, Continuous Batching, PagedAttention and should works as a great foundation for researchers to build their prototype. Currently, [DistServe](https://github.com/LLMServe/DistServe) and [FastServe](https://github.com/LLMServe/FastServe) use SwiftTransformer as the execution backend.
 
 It has the following advantages:
 
-- **Tiny.** It only contains essential code for running the GPT model, thus you can get your hands on it without much effort and implement your world-changing ideas.
-- **Efficient.** We leverage custom CUDA kernels to accelerate the inference process.
-- **Flexible.** It is easy to extend the model with your own ideas. For example, changing the order of computation, or modifying how the key/value cache is stored, should not be a problem.
-- **Well-documented.** Compared to [NVIDIA's FasterTransformer](https://github.com/NVIDIA/FasterTransformer/tree/main#global-environment), we provide much more detailed documentation and examples.
-
-This repo acts as the computation backend (i.e. data path) in our serving systems, including [DistServe](https://github.com/LLMServe/DistServe) and [FastServe](https://github.com/LLMServe/FastServe)'s
+- **Tiny.** It only contains essential code for running the GPT model, thus you can get your hands on it and experiment your research ideas without much effort. In fact, this project is launched after the author tried to implement a research prototype on [FasterTransformer](https://github.com/NVIDIA/FasterTransformer).
+- **Efficient.** It is written in C++ and adopts custom CUDA kernels from [xformers](https://github.com/facebookresearch/xformers) for performance. It also supports features like model/pipeline parallelism, FlashAttention, Continuous Batching and PagedAttention.
+- **Easy-to-use.** It provides Pytorch bindings for easy integration with Python, so you can easily build your own prototype in Python on top of it.
+- **Well-documented.** It has detailed documentation for researchers to hack around easily.
 
 ## Build
+NOTE: For users who want to run LLM inference off-the-shelf, please refer to other high-level LLM serving systems written in Python based on SwiftTransformer (like [DistServe](https://github.com/LLMServe/DistServe) and [FastServe](https://github.com/LLMServe/FastServe)). They all contain detailed documentation about environment setup.
 
-Please refer to [DistServe](https://github.com/LLMServe/DistServe) or [FastServe](https://github.com/LLMServe/FastServe)'s README about how to build SwiftTransformer.
+If you want to build your own project on top of SwiftTransformer, please follow the following steps:
+
+```shell
+# setup and activate the conda environment
+conda env create -f environment.yml && conda activate SwiftTransformer
+
+# build SwiftTransformer
+cmake -B build && cmake --build build -j$(nproc)
+```
+
+On successful builds, you should see `libst_pybinding.so` under the `SwiftTransformer/build/lib` directory. You can load this dynamic library in your Python project.
 
 ## Run
 
-NOTE. Users are expected to use high-level serving frameworks based on SwiftTransformer (including [DistServe](https://github.com/LLMServe/DistServe) and [FastServe](https://github.com/LLMServe/FastServe)'s), instead of using this repo directly.
-
-We provide an example to run the model on OPT weights. To run the example, please:
+We provide simple example to run the OPT model. To run the example, please:
 
 - **Download the vocab.** Download `gpt2-merges.txt` and `gpt2-vocab.json` from [Here](https://github.com/facebookresearch/metaseq/tree/main/projects/OPT/assets). For example, 
   ```shell
@@ -96,15 +103,3 @@ Note for vscode users: If you encounter `#include errors detected. Please update
 - **Extensive unit tests.** Every kernel and layer is paired with a unit test. We believe that unit tests are essential for research projects, since they can help us to verify the correctness of our implementation. We use [googletest](https://github.com/google/googletest) as our unit test framework. With the help of `TYPED_TEST` from googletest, we can test our kernels and layers with different data types (e.g. `float` and `half`) without writing redundant code.
 - **LibTorch for reference in unit tests.** For the "reference" part in unittests, we use LibTorch to implement the same kernel or layer. This is because LibTorch is well-tested, and we can use it as a reference to verify the correctness of our implementation.
 - **Raw pointers instead of `at::Tensor`.** We prefer the raw pointer in C over `at::Tensor` (The tensor class provided by LibTorch, the C++ frontend of PyTorch), since we need fine-grained control over the memory layout.
-
-### Prerequisite Knowledge
-
-Time for you to get your hands on! Here are some tutorials to help you get started:
-
-- CMake: You need to know what `target` is and what `target_link_libraries` does. Here is a tutorial: [An Introduction to Modern CMake
-](https://cliutils.gitlab.io/modern-cmake/)
-- GoogleTest: To write unit tests, a brief look at googletest's manual is necessary: [The googletest primer](https://google.github.io/googletest/primer.html)
-- CUDA: Interested in CUDA? Here are some tutorials:
-  - For beginners: [An Even Easier Introduction to CUDA](https://developer.nvidia.com/blog/even-easier-introduction-cuda/), [CUDA Tutorial](https://www.tutorialspoint.com/cuda/index.htm).
-  - Performance insight and optimization: [GPU Performance Background User's Guide](https://docs.nvidia.com/deeplearning/performance/dl-performance-gpu-background/index.html), [CUDA C++ Best Practices Guide](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html)
-  - Interesting stuff: [A HISTORY OF NVIDIA STREAM MULTIPROCESSOR](https://fabiensanglard.net/cuda/)
