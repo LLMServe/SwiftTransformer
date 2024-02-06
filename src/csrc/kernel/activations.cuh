@@ -16,11 +16,12 @@ namespace st::kernel {
 			return (T)((float)x / (1.0f + __expf((float)-x)));
 		}
 		else if constexpr (activation_type == ActivationType::GELU) {
-			// NOTE. GELU has many different implementations, this is the one currently
-			// used in Google BERT repo (identical to OpenAI GPT). Also see the Gaussian
-			// Error Linear Units paper: https://arxiv.org/abs/1606.08415
-			constexpr float constant = 0.7978845608028654;	// sqrtf(2.0f / M_PI);
-			return (T)(0.5f * (float)x * (1.0f + tanhf(constant * ((float)x + 0.044715f * __powf((float)x, 3.0f)))));
+			// NOTE. GELU has many different implementations, 
+			// this is the one currently used in vllm-project/vllm repo (gelu_new_kernel).
+			// file url: https://github.com/vllm-project/vllm/blob/main/csrc/activation_kernels.cu
+			const float x3 = (float) (x * x * x);
+			const T t = (T) tanhf((T) (0.79788456f * (float) (x + (T) (0.044715f * x3))));
+			return ((T) 0.5) * x * (((T) 1.0) + t);
 		}
 		else {
 			// No activation matches, raise an error
