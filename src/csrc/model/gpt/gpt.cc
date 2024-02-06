@@ -579,17 +579,31 @@ std::vector<int64_t> Gpt<T>::forward(
 	std::vector<int64_t> output_tokens(batch_size);
 	
 	if (parallelism_param.is_last_stage()){
-		st::kernel::layernorm<T>(
-			d_decoder_output.ptr,
-			d_decoder_output.ptr,
+		// Layernorm / RMSNorm
+		if (hyper_param.is_rmsnorm) {
+			st::kernel::rmsnorm<T>(
+				d_decoder_output.ptr,
+				d_decoder_output.ptr,
 
-			weight.final_layernorm_weight,
-			weight.final_layernorm_bias,
-			weight.layernorm_epsilon,
+				weight.final_layernorm_weight,
+				weight.layernorm_epsilon,
 
-			num_tokens,
-			hyper_param.hidden_size
-		);
+				num_tokens,
+				hyper_param.hidden_size
+			);
+		} else {
+			st::kernel::layernorm<T>(
+				d_decoder_output.ptr,
+				d_decoder_output.ptr,
+
+				weight.final_layernorm_weight,
+				weight.final_layernorm_bias,
+				weight.layernorm_epsilon,
+
+				num_tokens,
+				hyper_param.hidden_size
+			);
+		}
 		sync_check_cuda_error();
 		
 		// sampling
