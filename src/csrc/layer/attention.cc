@@ -176,7 +176,7 @@ void attention(
 		);
 		sync_check_cuda_error();
 
-		if (local_q_head_num == local_kv_head_num && std::is_same_v<T, float>) {
+		if (local_q_head_num == local_kv_head_num && std::is_same_v<T, half>) {
 			// Use xformers' attention kernel when GQA (group query attention) is disabled
 			kernel::xformersContextStageAttention<T>(
 				attn_out_buf,
