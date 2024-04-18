@@ -1,14 +1,14 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(SwiftTransformer LANGUAGES CXX CUDA)
 
-execute_process(COMMAND ls /.dockerenv OUTPUT_VARIABLE _DOCKER_ENV)
+if (DEFINED ENV{CONDA_PREFIX})
   # use conda environment
   link_directories($ENV{CONDA_PREFIX}/lib)
   include_directories($ENV{CONDA_PREFIX}/include)
   set(CMAKE_PREFIX_PATH $ENV{CONDA_PREFIX} ${CMAKE_PREFIX_PATH})
-
   set(CMAKE_CUDA_COMPILER $ENV{CONDA_PREFIX}/bin/nvcc)
   set(CUDAToolkit_ROOT $ENV{CONDA_PREFIX})
+endif()
 
 find_package(CUDAToolkit 11.4 REQUIRED)
 
