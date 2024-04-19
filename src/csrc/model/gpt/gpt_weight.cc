@@ -343,7 +343,7 @@ void GptWeight<T>::initDummyWeight() {
 	// We create a torch::Tensor which is also pointing to the same memory address, and use torch::Tensor::uniform_() to fill it
 	auto initDummyTensor = [](T* addr, int64_t numel) {
 		// torch::from_blob: Exposes the given data as a Tensor without taking ownership of the original data.
-		// So when tmp is destructed, the memory is not freed
+		// So when tmp is destructed, the memory won't be freed
 		torch::Tensor tmp = torch::from_blob(addr, {numel}, torch::TensorOptions().dtype(util::getTorchScalarType<T>()).device(torch::kCUDA));
 		tmp.uniform_(-1e-3, 1e-3);
 	};
