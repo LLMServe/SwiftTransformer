@@ -1,6 +1,7 @@
 #include "py_block_migration.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <map>
 
 #include <cuda_runtime_api.h>
@@ -104,8 +105,16 @@ bool register_ipc_mem_handle(
 	} else {
 		// Overlap
 		// Register the handle
+		// On some platforms (e.g. non-nvlink platform) it's impossible to enable GPU p2p access, which 
+		// leads to error when calling cudaIpcOpenMemHandle.
 		const int64_t context_worker_hash = (context_pp_rank<<6) + context_tp_rank;
-		CUDA_CHECK(cudaIpcOpenMemHandle(&context_worker_k_cache_addr[context_worker_hash], k_cache_handle, cudaIpcMemLazyEnablePeerAccess));
+		cudaError_t err = cudaIpcOpenMemHandle(&context_worker_k_cache_addr[context_worker_hash], k_cache_handle, cudaIpcMemLazyEnablePeerAccess);
+		if (err == cudaErrorPeerAccessUnsupported) {
+			printf("Error: Peer-to-peer access is unsupported on this platform.\n");
+			printf("In the current version of distserve, it is necessary to use a platform that supports GPU P2P access.\n");
+			printf("Exiting...");
+			exit(1);
+		}
 		CUDA_CHECK(cudaIpcOpenMemHandle(&context_worker_v_cache_addr[context_worker_hash], v_cache_handle, cudaIpcMemLazyEnablePeerAccess));
 		return true;
 	}
