@@ -176,7 +176,7 @@ void attention(
 		);
 		sync_check_cuda_error();
 
-		if (local_q_head_num == local_kv_head_num && std::is_same_v<T, float>) {
+		if (local_q_head_num == local_kv_head_num && std::is_same_v<T, half>) {
 			// Use xformers' attention kernel when GQA (group query attention) is disabled
 			kernel::xformersContextStageAttention<T>(
 				attn_out_buf,
@@ -219,6 +219,7 @@ void attention(
 
 
 	if (num_decoding_reqs != 0) {
+		sync_check_cuda_error_force();
 		kernel::fusedDecodingStageAttention(
 			attn_out_buf,
 
@@ -242,7 +243,7 @@ void attention(
 			block_size,
 			max_num_block_per_req
 		);
-		sync_check_cuda_error();
+		sync_check_cuda_error_force();
 	}
 
 	// The last step: Output GEMM

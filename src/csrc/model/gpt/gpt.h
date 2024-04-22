@@ -69,6 +69,12 @@ public:
 	//	pp_id: NCCL unique ID for pipeline parallelism.
 	void init_communicator(const ncclUniqueId& tp_id, const ncclUniqueId& pp_id);
 
+	void generateDPositionIds(
+		const std::vector<std::vector<int64_t>> &input_tokens_batched,
+		const std::vector<int64_t> &first_token_indexes,
+		const int64_t num_tokens
+	);
+
 	void inputBatchEmbedAndPosiEncode(
 		T* d_output,
 		const std::vector<std::vector<int64_t>> &input_tokens_batched,

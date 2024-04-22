@@ -81,11 +81,37 @@ void Gpt<T>::initDummyWeight() {
 	this->weight.initDummyWeight();
 }
 
+// Gpt<T>::generateDPositionIds
+// This function generate d_position_ids
+// The variable d_position_ids will be used in forwardDecoder
+template<typename T>
+void Gpt<T>::generateDPositionIds(
+	const std::vector<std::vector<int64_t>> &input_tokens_batched,
+	const std::vector<int64_t> &first_token_indexes,
+	const int64_t num_tokens
+) {
+	int64_t* h_position_ids = new int64_t[num_tokens];	// [num_tokens]
+	int64_t ptr = 0;
+	for (int i = 0; i < (int64_t)input_tokens_batched.size(); i++) {
+		for (int j = 0; j < (int64_t)input_tokens_batched[i].size(); j++) {
+			h_position_ids[ptr] = first_token_indexes[i] + j;
+			ptr++;
+		}
+	}
+	assert(ptr == num_tokens);
+	
+	d_position_ids.remalloc(num_tokens);
+	CUDA_CHECK(cudaMemcpy(d_position_ids.ptr, h_position_ids, sizeof(int64_t) * num_tokens, cudaMemcpyHostToDevice));
+
+	delete[] h_position_ids;
+}
+
 // Gpt<T>::inputEmbed - Embed && Positional encode a batch of tokens.
 // The function will flat the tokens of batched requests into 1-D array to do embedding,
 // and then do positional encoding according to the index of each request's first token
 // in its whole sentence. For example, if request i is in decoding phase, and it has already
 // generated 5 tokens, then first_token_indexes[i] = 5.
+// WARNING Please call `generateDPositionIds()` before this function!
 template<typename T>
 void Gpt<T>::inputBatchEmbedAndPosiEncode(
 	T* d_output,
@@ -94,25 +120,19 @@ void Gpt<T>::inputBatchEmbedAndPosiEncode(
 	const int64_t num_tokens
 ) {
 	// Generate token_ids and position_ids
-	// In order to improve performance we allocate memory for both token_ids and position_ids at the same time.
-	int64_t* h_token_ids = new int64_t[num_tokens*2];		// [num_tokens]
-	int64_t* h_position_ids = h_token_ids + num_tokens;	// [num_tokens]
+	int64_t* h_token_ids = new int64_t[num_tokens];		// [num_tokens]
 	int64_t ptr = 0;
 	for (int i = 0; i < (int64_t)input_tokens_batched.size(); i++) {
 		for (int j = 0; j < (int64_t)input_tokens_batched[i].size(); j++) {
 			h_token_ids[ptr] = input_tokens_batched[i][j];
-			h_position_ids[ptr] = first_token_indexes[i] + j;
 			ptr++;
 		}
 	}
 	assert(ptr == num_tokens);
 
-	// Copy token_ids and position_ids to GPU
+	// Copy token_ids to GPU
 	d_token_ids.remalloc(num_tokens);
-	d_position_ids.remalloc(num_tokens);
 	CUDA_CHECK(cudaMemcpy(d_token_ids.ptr, h_token_ids, sizeof(int64_t) * num_tokens, cudaMemcpyHostToDevice));
-	CUDA_CHECK(cudaMemcpy(d_position_ids.ptr, h_position_ids, sizeof(int64_t) * num_tokens, cudaMemcpyHostToDevice));
-	// WARN the variable d_position_ids will be used in forwardDecoder
 
 	// Embedding & Encoding
 	st::kernel::embedAndPosiEncodeBatched(
@@ -529,6 +549,13 @@ std::vector<int64_t> Gpt<T>::forward(
 	d_decoder_output.remalloc(num_tokens * this->hyper_param.hidden_size);
 	sync_check_cuda_error();
 
+	this->generateDPositionIds(
+		input_tokens_batched,
+		first_token_indexes,
+		num_tokens
+	);
+	sync_check_cuda_error();
+
 	if (parallelism_param.is_first_stage()) {
 		// Input embedding & positional encoding
 		// WARN the variable d_position_ids calculated by inputBatchEmbedAndPosiEncode will be used in forwardDecoder
@@ -630,6 +657,8 @@ std::vector<int64_t> Gpt<T>::forward(
 		}
 	}
 
+	sync_check_cuda_error();
+	sync_check_cuda_error_force();
 	delete[] h_input_lens;
 	delete[] h_is_context_stage;
 	delete[] h_sum_prev_input_lens;

@@ -293,7 +293,9 @@ void fusedDecodingStageAttention(
 		assert (block_size <= WARP_SIZE);
 		assert (DEFAULT_THREAD_BLOCK_SIZE >= head_dim);
 	#endif
-	if (num_q_heads == num_kv_heads) {
+	if (num_q_heads == num_kv_heads &&
+		(max_decoding_req_len+1+block_size-1)/block_size*block_size*sizeof(float) <= 47*1024) {
+		// printf("%lld\n", (max_decoding_req_len+1+block_size-1)/block_size*block_size*sizeof(float));
 		fusedDecodingStageAttentionMHA(
 			result,
 			qkvs,
@@ -315,7 +317,7 @@ void fusedDecodingStageAttention(
 		);
 		return;
 	}
-	int64_t q_heads_per_thread_block = 2;	// TODO Tune this
+	int64_t q_heads_per_thread_block = num_q_heads == num_kv_heads ? 1 : 2;	// TODO Tune this
 	T* k_cache_offseted = k_cache + layer_id * num_kv_heads * block_size * head_dim;
 	T* v_cache_offseted = v_cache + layer_id * num_kv_heads * block_size * head_dim;
 	dim3 grid_dim(num_q_heads/q_heads_per_thread_block, num_decoding_reqs);

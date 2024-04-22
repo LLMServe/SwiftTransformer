@@ -16,9 +16,9 @@ extern void __assert_fail (const char *__assertion, const char *__file,
 			   unsigned int __line, const char *__function)
      __THROW __attribute__ ((__noreturn__));
 
-#define __ASSERT_FUNCTION	__extension__ __PRETTY_FUNCTION__
+#define __ST_ASSERT_FUNCTION	__extension__ __PRETTY_FUNCTION__
 #  define assert_whenever(expr)							\
      (static_cast <bool> (expr)						\
       ? void (0)							\
-      : __assert_fail (#expr, __FILE__, __LINE__, __ASSERT_FUNCTION))
+      : __assert_fail (#expr, __FILE__, __LINE__, __ST_ASSERT_FUNCTION))
 }

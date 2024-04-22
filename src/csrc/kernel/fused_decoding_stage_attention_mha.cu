@@ -369,7 +369,7 @@ void fusedDecodingStageAttentionMHA(
 	T* k_cache_offseted = k_cache + layer_id * num_heads * block_size * head_dim;
 	T* v_cache_offseted = v_cache + layer_id * num_heads * block_size * head_dim;
 	dim3 grid_dim(num_heads, num_decoding_reqs);
-	int shared_mem_size = std::max(((max_decoding_req_len+1999 + block_size-1) / block_size) * block_size * sizeof(float), DEFAULT_THREAD_BLOCK_SIZE*2*sizeof(T));
+	int shared_mem_size = std::max(((max_decoding_req_len+1 + block_size-1) / block_size) * block_size * sizeof(float), DEFAULT_THREAD_BLOCK_SIZE*2*sizeof(T));
 	FUSED_DECODING_STAGE_ATTENTION_MHA_DISPATCH_HEAD_DIM(T);
 }
 

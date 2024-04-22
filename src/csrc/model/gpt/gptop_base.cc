@@ -63,7 +63,7 @@ std::vector<int64_t> GptOpBase::forward(
     int64_t *d_block_table;
     CUDA_CHECK(cudaMalloc(&d_block_table, sizeof(int64_t) * batch_size * this->gpt->pagedattn_param.max_num_block_per_req));
     CUDA_FREE_AT_RETURN(d_block_table);
-    cudaMemcpy(d_block_table, h_block_table, sizeof(int64_t) * batch_size * this->gpt->pagedattn_param.max_num_block_per_req, cudaMemcpyHostToDevice);
+    CUDA_CHECK(cudaMemcpy(d_block_table, h_block_table, sizeof(int64_t) * batch_size * this->gpt->pagedattn_param.max_num_block_per_req, cudaMemcpyHostToDevice));
     delete[] h_block_table;
     sync_check_cuda_error();
 

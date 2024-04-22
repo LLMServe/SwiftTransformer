@@ -44,7 +44,7 @@ __global__ void rotaryPosiEmbeddingBatchedKernel (
 ) {
 	const int64_t rel_pos = token_indexes[blockIdx.x];
 	float cur_sin_f, cur_cos_f;
-	__sincosf(rel_pos*__powf(10000.0f, -2.0f*threadIdx.x/head_dim), &cur_sin_f, &cur_cos_f);
+	__sincosf(rel_pos*__powf(50000000.0f, -2.0f*threadIdx.x/head_dim), &cur_sin_f, &cur_cos_f);
 	const T cur_sin = (T)cur_sin_f, cur_cos = (T)cur_cos_f;
 
 	typedef typename std::conditional<std::is_same<T, float>::value, float2, half2>::type T2;
