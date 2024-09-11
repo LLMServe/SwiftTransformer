@@ -14,6 +14,7 @@ class GptOpBase : public torch::CustomClassHolder {
 public:
 	GptBase* gpt;	// A pointer to GptBase, which can be Gpt<T> for any T.
 	bool weight_loaded;
+	RemallocableArray<int64_t> d_block_table;
 
 	GptOpBase(
 		std::string inference_dtype,

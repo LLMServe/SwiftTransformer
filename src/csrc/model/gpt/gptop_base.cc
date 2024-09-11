@@ -56,22 +56,19 @@ std::vector<int64_t> GptOpBase::forward(
     // Prepare block_table
     int64_t* h_block_table = new int64_t[batch_size * this->gpt->pagedattn_param.max_num_block_per_req];
     for (int64_t i = 0; i < batch_size; i++) {
-        for (int64_t j = 0; j < (int64_t)block_table[i].size(); j++) {
-            h_block_table[i * this->gpt->pagedattn_param.max_num_block_per_req + j] = block_table[i][j];
-        }
+        memcpy(h_block_table + i * this->gpt->pagedattn_param.max_num_block_per_req, block_table[i].data(), block_table[i].size() * sizeof(int64_t));
     }
-    int64_t *d_block_table;
-    CUDA_CHECK(cudaMalloc(&d_block_table, sizeof(int64_t) * batch_size * this->gpt->pagedattn_param.max_num_block_per_req));
-    CUDA_FREE_AT_RETURN(d_block_table);
-    cudaMemcpy(d_block_table, h_block_table, sizeof(int64_t) * batch_size * this->gpt->pagedattn_param.max_num_block_per_req, cudaMemcpyHostToDevice);
+    d_block_table.remalloc(batch_size * this->gpt->pagedattn_param.max_num_block_per_req);
+    cudaMemcpy(d_block_table.ptr, h_block_table, sizeof(int64_t) * batch_size * this->gpt->pagedattn_param.max_num_block_per_req, cudaMemcpyHostToDevice);
     delete[] h_block_table;
     sync_check_cuda_error();
 
-    return this->gpt->forward(input_tokens_batched,
+    auto result = this->gpt->forward(input_tokens_batched,
                               first_token_indexes,
                               st::util::convertTensorToRawPtr(k_cache),
                               st::util::convertTensorToRawPtr(v_cache),
-                              d_block_table);
+                              d_block_table.ptr);
+    return result;
 }
 
 void GptOpBase::init_communicator(const std::vector<int64_t> tp_id, const std::vector<int64_t> pp_id){
