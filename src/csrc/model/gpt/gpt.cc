@@ -87,13 +87,14 @@ template<typename T>
 void Gpt<T>::getInputPosiIds(
 	const std::vector<std::vector<int64_t>> &input_tokens_batched,
 	const std::vector<int64_t> &first_token_indexes,
-	const int64_t num_tokens
+	const int64_t num_tokens,
+	const int64_t max_position_embeddings
 ) {
 	int64_t* h_position_ids = new int64_t[num_tokens];	// [num_tokens]
 	int64_t ptr = 0;
 	for (int i = 0; i < (int)first_token_indexes.size(); i++) {
 		for (int j = 0; j < (int64_t)input_tokens_batched[i].size(); j++) {
-			h_position_ids[ptr] = first_token_indexes[i] + j;
+			h_position_ids[ptr] = std::min(first_token_indexes[i] + j, max_position_embeddings-1);
 			ptr++;
 		}
 	}
@@ -526,11 +527,14 @@ std::vector<int64_t> Gpt<T>::forward(
 		h_sum_prev_input_lens[i] = num_tokens;
         num_tokens += input_tokens_batched[i].size();
 		if ((h_is_context_stage[i] ? h_input_lens[i]-1 : first_token_indexes[i]) >= hyper_param.max_position_embeddings) {
-			fprintf(stderr, "Gpt::forward: input length (%s, last_token_position=%ld) exceeds max_position_embeddings (%ld)\n",
-					h_is_context_stage[i] ? "context" : "decoding",
-					h_is_context_stage[i] ? h_input_lens[i]-1 : first_token_indexes[i],
-					hyper_param.max_position_embeddings);
-			assert(0);
+			static bool too_long_warning_shown = false;
+			if (!too_long_warning_shown) {
+				fprintf(stderr, "Gpt::forward: input length (%s, last_token_position=%ld) exceeds max_position_embeddings (%ld)\n",
+						h_is_context_stage[i] ? "context" : "decoding",
+						h_is_context_stage[i] ? h_input_lens[i]-1 : first_token_indexes[i],
+						hyper_param.max_position_embeddings);
+				too_long_warning_shown = true;
+			}
 		}
     }
 	d_input_lens.remalloc(batch_size);
@@ -545,7 +549,7 @@ std::vector<int64_t> Gpt<T>::forward(
 	sync_check_cuda_error();
 
 	if (parallelism_param.is_first_stage() || hyper_param.is_rotary_posi_embedding) {
-		this->getInputPosiIds(input_tokens_batched, first_token_indexes, num_tokens);
+		this->getInputPosiIds(input_tokens_batched, first_token_indexes, num_tokens, hyper_param.max_position_embeddings);
 		sync_check_cuda_error();
 	}
 

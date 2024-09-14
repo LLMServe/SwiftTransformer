@@ -72,7 +72,8 @@ public:
 	void getInputPosiIds(
 		const std::vector<std::vector<int64_t>> &input_tokens_batched,
 		const std::vector<int64_t> &first_token_indexes,
-		const int64_t num_tokens
+		const int64_t num_tokens,
+		const int64_t max_position_embeddings
 	);
 
 	void inputBatchEmbedAndPosiEncode(
