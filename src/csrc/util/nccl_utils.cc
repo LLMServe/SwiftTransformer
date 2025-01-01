@@ -1,4 +1,5 @@
 #include "nccl_utils.h"
+#include "util/cuda_utils.h"
 #include <cstdio>
 
 #define NCCL_CHECK(cmd)                                                                                           \
@@ -99,6 +100,7 @@ void stNcclRecv(
     }
 
     NCCL_CHECK(ncclRecv(buff, count, datatype, recv_from, comm.comm, stream));
+    CUDA_CHECK(cudaStreamSynchronize(stream));
 }
 
 void stNcclSendRecv(

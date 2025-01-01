@@ -560,6 +560,7 @@ std::vector<int64_t> Gpt<T>::forward(
 		sync_check_cuda_error();
 	}
 	else {
+		d_position_ids.remalloc(num_tokens);
 		if (parallelism_param.is_stage_leader()){
 			st::util::stNcclRecv(
 				d_decoder_input.ptr,
